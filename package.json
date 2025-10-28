@@ -1,8 +1,8 @@
 {
-  "name": "whatsappbot",
+  "name": "whatsapp_webhook_nodejs_tutorial",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
+    "scripts": {
     "dev":"node --watch index.js",
      "start":"node index.js"
   },
@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.1.0"
+    "axios": "^1.7.8",
+    "express": "^4.21.1"
   }
 }
