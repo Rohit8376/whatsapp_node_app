@@ -4,7 +4,7 @@ const express = require('express')
 const axios = require('axios')
 const https = require('https')
 const fs = require('fs')
-
+const formData = require('form-data')
 
 
 const JWT_TOKEN=process.env.JWT_TOKEN
@@ -272,6 +272,19 @@ async function sendReplyButtons(to) {
 
 
 
+
+function formatForWhatsApp(messages) {
+  
+  return messages
+    .join(" ")                 // join array into one string
+    .split("\n")               // split on newline
+    .map(line => line.trim())  // clean spaces
+    .filter(line => line)      // remove empty lines
+    .map(line => `- ${line}`)  // add bullet
+    .join("\n");               // join back with newlines
+}
+
+
 function generate_fileName(){
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -281,6 +294,7 @@ function generate_fileName(){
     return dynamicFileName
 
 }
+
 
 
 async function downloadImage(imgPath) {
