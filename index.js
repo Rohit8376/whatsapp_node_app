@@ -11,8 +11,19 @@ const JWT_TOKEN=process.env.JWT_TOKEN
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_TOKEN
 const WEBHOOK_VERIFY_TOKEN = 'my-verify-token'
 
+
+
 const app = express()
 app.use(express.json())
+
+
+console.log({
+  PHONE_NUMBER_ID:process.env.PHONE_NUMBER_ID,
+  JWT_TOKEN:process.env.JWT_TOKEN,
+  WHATSAPP_ACCESS_TOKEN : process.env.WHATSAPP_TOKEN,
+  RECIEVER_CONTACT_NUMBER: process.env.RECIEVER_CONTACT_NUMBER
+})
+
 
 app.get('/', (req, res) => {
   res.send('Whatsapp with Node.js and Webhooks')
@@ -84,7 +95,7 @@ app.post('/webhook', async (req, res) => {
         }).catch((error) => {
           console.error("Error in httprequest2:", error);
         });
-        
+
       }
 
 
@@ -112,7 +123,7 @@ app.post('/webhook', async (req, res) => {
 
 async function sendMessage(to, body) {
   await axios({
-    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -131,7 +142,7 @@ async function sendMessage(to, body) {
 
 async function replyMessage(to, body, messageId) {
   await axios({
-    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -154,7 +165,7 @@ async function replyMessage(to, body, messageId) {
 
 async function sendList(to) {
   await axios({
-    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -213,7 +224,7 @@ async function sendList(to) {
 
 async function sendReplyButtons(to) {
   await axios({
-    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
