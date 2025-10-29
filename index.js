@@ -7,8 +7,8 @@ const fs = require('fs')
 
 
 
-const JWT_TOKEN='eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJxc2FkbWluIiwidXNlckRpcmVjdG9yeSI6InFsaWtzZW5zZXZtMyIsImlhdCI6MTc2MTU2MTk2MCwiZXhwIjoyMTIxNTYxOTYwfQ.OfnWobOJdMOm8mUnDCny-WVHmbOR7-NGw60UbthtOIJArmZAYgOZQ3R8zNxQM73UQ644-50k5zbaVdkqKg2ig87YkZ-NC9QxHPREoOaRDYOkHQD2MBHi_ZZ882p6SqeRrhZOnQl_1H5gkrtKAT2iy7Wwy8ZPKpWPoykIkZzcGAJrNGYTKbModwD-EtKWFsKjfQ00kFVVtSDTISZPHoB6wf7hPKc34rHvnm7GD7cCswq8VW6hQ2fdaXrh-bDYopYzNs0dEvTorh4uWTF1iuEa71wIEwAFmLvt2ihmpVVVAjPejUkqOvQBrr-ISKM9zpdCEWtjLsEEGGRxA1MDWpg1JA'
-const WHATSAPP_ACCESS_TOKEN = 'EAAKz0hYrk7YBP7VrCxZAeuUbtZBUuMjeHLVpgk0gSOazondkKOlJtZAyIGdHm0ZB2l4gdqGmyROoj15ZCmLbYwi8LLiuoKIYvPayVIuwptklRzF1isYSIMIXYA2vfcRIxC35G57t5RSgO2TrBpjM0fwIVhVJnbkHEkS1X6z5GSsxK3Fbl8YfCQthny3zZBETKg7fcIRJ5kLPswZCowsnPjitSJ4Cd6xxeyAyZCo40jyIQIpZAwXDzjlS6dvbbw8KdJ21mInWq5CK01Hm9EFuyI262r93pHzrcWULbOZCU3f84ZD'
+const JWT_TOKEN=process.env.JWT_TOKEN
+const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_TOKEN
 const WEBHOOK_VERIFY_TOKEN = 'my-verify-token'
 
 const app = express()
@@ -104,9 +104,6 @@ app.post('/webhook', async (req, res) => {
   
   res.status(200).send('Webhook processed')
 })
-
-
-
 
 
 
