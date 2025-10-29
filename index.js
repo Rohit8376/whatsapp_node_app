@@ -64,26 +64,29 @@ app.post('/webhook', async (req, res) => {
         replyMessage(messages.from, 'Hello. How can i help you?', messages.id)
       }
 
-      if (messages.text.body.toLowerCase() === 'list') {
+      else if (messages.text.body.toLowerCase() === 'list') {
         sendList(messages.from)
       }
 
-      if (messages.text.body.toLowerCase() === 'buttons') {
+      else if (messages.text.body.toLowerCase() === 'buttons') {
         sendReplyButtons(messages.from)
       }
+      else{
+        
+        httprequest2(messages.text.body.toLowerCase()).then((result) => {
+          console.log("Result from httprequest2:", result);
+  
+          if (result.uploaded_img_id == null){
+              sendTextMessage( formatForWhatsApp(result.body))
+          }else{
+              sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body))
+          }
+        }).catch((error) => {
+          console.error("Error in httprequest2:", error);
+        });
+        
+      }
 
-
-      httprequest2(messages.text.body.toLowerCase()).then((result) => {
-        console.log("Result from httprequest2:", result);
-
-        if (result.uploaded_img_id == null){
-            sendTextMessage( formatForWhatsApp(result.body))
-        }else{
-            sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body))
-        }
-      }).catch((error) => {
-        console.error("Error in httprequest2:", error);
-      });
 
 
 
@@ -404,7 +407,7 @@ async function httprequest2(reservationObj) {
                 const img = myobj.conversationalResponse.responses[0].imageUrl;
 
                 const downloadedImagePath = await downloadImage(`/jwt${img}`)
-                // uploaded_img_id = await upload_image_(downloadedImagePath)
+                uploaded_img_id = await upload_image_(downloadedImagePath)
 
                 console.log("img",`https://analytics.exponentia.ai/jwt${img}`)
                 if ("narrative" in myobj.conversationalResponse.responses[1]) {
