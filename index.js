@@ -1,6 +1,13 @@
+require('dotenv').config()
+
 const express = require('express')
 const axios = require('axios')
+const https = require('https')
+const fs = require('fs')
 
+
+
+const JWT_TOKEN='eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJxc2FkbWluIiwidXNlckRpcmVjdG9yeSI6InFsaWtzZW5zZXZtMyIsImlhdCI6MTc2MTU2MTk2MCwiZXhwIjoyMTIxNTYxOTYwfQ.OfnWobOJdMOm8mUnDCny-WVHmbOR7-NGw60UbthtOIJArmZAYgOZQ3R8zNxQM73UQ644-50k5zbaVdkqKg2ig87YkZ-NC9QxHPREoOaRDYOkHQD2MBHi_ZZ882p6SqeRrhZOnQl_1H5gkrtKAT2iy7Wwy8ZPKpWPoykIkZzcGAJrNGYTKbModwD-EtKWFsKjfQ00kFVVtSDTISZPHoB6wf7hPKc34rHvnm7GD7cCswq8VW6hQ2fdaXrh-bDYopYzNs0dEvTorh4uWTF1iuEa71wIEwAFmLvt2ihmpVVVAjPejUkqOvQBrr-ISKM9zpdCEWtjLsEEGGRxA1MDWpg1JA'
 const WHATSAPP_ACCESS_TOKEN = 'EAAKz0hYrk7YBP0KAsl4mrWUc2lCazIJGZBooZBVYf9INBHNDjQdAZAYhGYkOigbNtbhNwypo3PofQ0lKjMDM5LSeJc8oi0iHwB7aY8Hc07lDo0ntNpYKdBxZAn7Uekv2L8XDD1nN7T713DFxYoTMAZBZCIWaRPP7ilFdZApHezwHVdqeuZAWZAwoczgjTnVZAjkvFc9nrmZA1M3qt506cBNMd793LI4AEetDNUoQtj4L78DsoAbYuHGyP6dC5ZA9IqOxR7OFGZAvTtn0QbtxFS3lvpvMiphx3haaBavub7FLxwosZD'
 const WEBHOOK_VERIFY_TOKEN = 'my-verify-token'
 
@@ -48,11 +55,13 @@ app.post('/webhook', async (req, res) => {
     `)
   }
 
+
   if (messages) {
-    // Handle received messages
+    
+    
     if (messages.type === 'text') {
-      if (messages.text.body.toLowerCase() === 'hello') {
-        replyMessage(messages.from, 'Hello. How are you?', messages.id)
+      if (messages.text.body.toLowerCase() === 'hello' || messages.text.body.toLowerCase() === 'hi') {
+        replyMessage(messages.from, 'Hello. How can i help you?', messages.id)
       }
 
       if (messages.text.body.toLowerCase() === 'list') {
@@ -62,6 +71,22 @@ app.post('/webhook', async (req, res) => {
       if (messages.text.body.toLowerCase() === 'buttons') {
         sendReplyButtons(messages.from)
       }
+
+
+      httprequest2(messages.text.body.toLowerCase()).then((result) => {
+        console.log("Result from httprequest2:", result);
+
+        if (result.uploaded_img_id == null){
+            sendTextMessage( formatForWhatsApp(result.body))
+        }else{
+            sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body))
+        }
+      }).catch((error) => {
+        console.error("Error in httprequest2:", error);
+      });
+
+
+
     }
 
     if (messages.type === 'interactive') {
@@ -80,9 +105,14 @@ app.post('/webhook', async (req, res) => {
   res.status(200).send('Webhook processed')
 })
 
+
+
+
+
+
 async function sendMessage(to, body) {
   await axios({
-    url: 'https://graph.facebook.com/v21.0/713087801893472/messages',
+    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -101,7 +131,7 @@ async function sendMessage(to, body) {
 
 async function replyMessage(to, body, messageId) {
   await axios({
-    url: 'https://graph.facebook.com/v21.0/713087801893472/messages',
+    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -121,9 +151,10 @@ async function replyMessage(to, body, messageId) {
   })
 }
 
+
 async function sendList(to) {
   await axios({
-    url: 'https://graph.facebook.com/v21.0/713087801893472/messages',
+    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -179,9 +210,10 @@ async function sendList(to) {
   })
 }
 
+
 async function sendReplyButtons(to) {
   await axios({
-    url: 'https://graph.facebook.com/v21.0/713087801893472/messages',
+    url: `https://graph.facebook.com/v21.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
@@ -225,6 +257,181 @@ async function sendReplyButtons(to) {
     })
   })
 }
+
+
+
+
+function generate_fileName(){
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const randomId = Math.floor(Math.random() * 10000);
+    const dynamicFileName = `chart-${timestamp}-${randomId}.png`;
+
+    return dynamicFileName
+
+}
+
+
+async function downloadImage(imgPath) {
+  try {
+    const url = `https://analytics.exponentia.ai${imgPath}`;
+    console.log(url)
+    const response = await axios({
+      url: url,
+      method: "GET",
+      responseType: "stream",
+      headers: {
+        Authorization: `Bearer ${JWT_TOKEN}`
+      },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
+    });
+
+    const fileName = `uploads/downloaded-${generate_fileName()}`;
+    const writer = fs.createWriteStream(fileName);
+
+    response.data.pipe(writer);
+
+    return new Promise(async (resolve, reject) => {
+      writer.on("finish", () => {
+        console.log("Image saved as:", fileName);
+
+        resolve(fileName);
+      });
+      writer.on("error", reject);
+    });
+  } catch (err) {
+    console.error("Error downloading image:", err.message);
+  }
+}
+
+async function upload_image_(path){
+    const data = new formData()
+    data.append('messaging_product', 'whatsapp')
+    data.append('file', fs.createReadStream(process.cwd()+`/${path}`), {contentType:'image/png'})
+    data.append('type', 'image/png')
+    const response = await axios({
+        url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/media` ,
+        method:'post',
+        headers:{
+            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`
+        },
+        data: data
+    })
+    console.log(response.data)
+    return response.data.id
+}
+
+async function sendTextMessage(text_msg) {
+
+    const response = await axios({
+        url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages` ,
+        method:'post',
+        headers:{
+            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+            'Content-Type':'application/json'
+        },
+        data: JSON.stringify({
+            messaging_product:'whatsapp',
+            to:process.env.RECIEVER_CONTACT_NUMBER,
+            type:'text',
+            text:{
+                body:text_msg
+            }
+        })
+
+    })
+    console.log(response.data)
+    // return true
+}
+
+async function sendWhatsapp_message_with_media_caption(image_id, caption) {
+
+    const response = await axios({
+        url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages` ,
+        method:'post',
+        headers:{
+            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+            'Content-Type':'application/json'
+        },
+
+        data: JSON.stringify({
+            messaging_product:'whatsapp',
+            to:process.env.RECIEVER_CONTACT_NUMBER,
+            type:'image',
+            image:{
+                id:image_id,
+                caption:caption
+            }
+        })
+
+    })
+    console.log(response.data);
+    // return true
+    
+}
+
+
+async function httprequest2(reservationObj) {
+
+    const newData = JSON.stringify({
+            text: reservationObj,
+            app: {
+                "id": "c3470397-2799-4b92-a5b4-1eb9373f4c6b",
+                "name": "PNB Metlife Demo(1)",
+            },
+        });
+
+    try {
+        const options = {
+            url: "https://analytics.exponentia.ai:443/jwt/api/v1/nl/query",
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${JWT_TOKEN}`,
+            },
+            data: newData,
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
+        };
+
+        const res = await axios(options);
+        
+        let body = [];
+        const myobj = res.data;
+
+        let uploaded_img_id = null
+        if (myobj.conversationalResponse.responses.length > 0) {
+            if ("narrative" in myobj.conversationalResponse.responses[0]) {
+                const temp = myobj.conversationalResponse.responses[0].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
+                body.push(temp.trim());
+            } else if ("imageUrl" in myobj.conversationalResponse.responses[0]) {
+                const img = myobj.conversationalResponse.responses[0].imageUrl;
+
+                const downloadedImagePath = await downloadImage(`/jwt${img}`)
+                // uploaded_img_id = await upload_image_(downloadedImagePath)
+
+                console.log("img",`https://analytics.exponentia.ai/jwt${img}`)
+                if ("narrative" in myobj.conversationalResponse.responses[1]) {
+                    const text_r = myobj.conversationalResponse.responses[1].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
+                    body.push(text_r);
+                } else {
+                    console.log("Main Response else if-else: ", img);
+                }
+            }
+        } else {
+            const temp_1 = "Enter Valid Request";
+            body.push(temp_1);
+        }
+        
+        return {uploaded_img_id, body};
+
+    } catch (e) {
+        console.log("catch 2", e.message);
+        throw e; // Rethrow the error for higher-level handling
+    }
+}
+
+
+
 
 app.listen(3000, () => {
   console.log('Server started on port 3000')
