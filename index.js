@@ -424,7 +424,10 @@ async function httprequest2(reservationObj) {
         const myobj = res.data;
 
         let uploaded_img_id = null
-        if (myobj.conversationalResponse.responses.length > 0) {
+        if (myobj.conversationalResponse.responses.length > 0 && myobj.conversationalResponse.responses[0]) {
+
+            console.log(myobj.conversationalResponse.responses[0])
+
             if ("narrative" in myobj.conversationalResponse.responses[0]) {
                 const temp = myobj.conversationalResponse.responses[0].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
                 body.push(temp.trim());
