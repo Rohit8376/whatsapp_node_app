@@ -84,13 +84,13 @@ app.post('/webhook', async (req, res) => {
       }
       else{
         
-        httprequest2(messages.text.body.toLowerCase()).then((result) => {
+        httprequest2(messages.text.body.toLowerCase(), messages.from).then((result) => {
           console.log("Result from httprequest2:", result);
   
           if (result.uploaded_img_id == null){
-              sendTextMessage( formatForWhatsApp(result.body))
+              sendTextMessage( formatForWhatsApp(result.body), result.to)
           }else{
-              sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body))
+              sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body), result.to)
           }
         }).catch((error) => {
           console.error("Error in httprequest2:", error);
@@ -346,7 +346,7 @@ async function upload_image_(path){
     return response.data.id
 }
 
-async function sendTextMessage(text_msg) {
+async function sendTextMessage(text_msg, to) {
 
     const response = await axios({
         url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages` ,
@@ -357,7 +357,7 @@ async function sendTextMessage(text_msg) {
         },
         data: JSON.stringify({
             messaging_product:'whatsapp',
-            to:process.env.RECIEVER_CONTACT_NUMBER,
+            to:to,
             type:'text',
             text:{
                 body:text_msg
@@ -369,7 +369,7 @@ async function sendTextMessage(text_msg) {
     // return true
 }
 
-async function sendWhatsapp_message_with_media_caption(image_id, caption) {
+async function sendWhatsapp_message_with_media_caption(image_id, caption, to) {
 
     const response = await axios({
         url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages` ,
@@ -381,7 +381,7 @@ async function sendWhatsapp_message_with_media_caption(image_id, caption) {
 
         data: JSON.stringify({
             messaging_product:'whatsapp',
-            to:process.env.RECIEVER_CONTACT_NUMBER,
+            to:to,
             type:'image',
             image:{
                 id:image_id,
@@ -396,7 +396,7 @@ async function sendWhatsapp_message_with_media_caption(image_id, caption) {
 }
 
 
-async function httprequest2(reservationObj) {
+async function httprequest2(reservationObj, to) {
 
     const newData = JSON.stringify({
             text: reservationObj,
@@ -450,7 +450,7 @@ async function httprequest2(reservationObj) {
             body.push(temp_1);
         }
         
-        return {uploaded_img_id, body};
+        return {uploaded_img_id, body, to};
 
     } catch (e) {
         console.log("catch 2", e.message);
