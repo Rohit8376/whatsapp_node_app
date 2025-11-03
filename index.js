@@ -401,8 +401,8 @@ async function httprequest2(reservationObj) {
     const newData = JSON.stringify({
             text: reservationObj,
             app: {
-                "id": "c3470397-2799-4b92-a5b4-1eb9373f4c6b",
-                "name": "PNB Metlife Demo(1)",
+                "id": "d6c86305-6e19-44bb-8e97-b6211757300b",
+                "name": "PNB Metlife Demo new",
             },
         });
 
