@@ -426,7 +426,6 @@ async function httprequest2(reservationObj) {
         let uploaded_img_id = null
         if (myobj.conversationalResponse.responses.length > 0 && myobj.conversationalResponse.responses[0]) {
 
-            console.log(myobj.conversationalResponse.responses[0])
 
             if ("narrative" in myobj.conversationalResponse.responses[0]) {
                 const temp = myobj.conversationalResponse.responses[0].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
@@ -438,7 +437,8 @@ async function httprequest2(reservationObj) {
                 uploaded_img_id = await upload_image_(downloadedImagePath)
 
                 console.log("img",`https://analytics.exponentia.ai/jwt${img}`)
-                if ("narrative" in myobj.conversationalResponse.responses[1]) {
+
+                if ( myobj.conversationalResponse.responses[1] && "narrative" in myobj.conversationalResponse.responses[1]) {
                     const text_r = myobj.conversationalResponse.responses[1].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
                     body.push(text_r);
                 } else {
