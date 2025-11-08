@@ -155,7 +155,7 @@ app.post('/user/add', function (req, res) {
   if (user_exist) {
     return res.render('add_user', { error: 'mobile_number already axist' })
   }
-  users.push({ mobile_number: mobile_number, user_id: user_id, selected_apps: null });
+  users.push({ mobile_number: mobile_number, user_id: user_id, selected_apps: {} });
   return res.redirect('/')
 });
 
@@ -284,7 +284,7 @@ app.post('/webhook', async (req, res) => {
       else {
 
         httprequest2(messages.text.body.toLowerCase(), messages.from).then((result) => {
-          console.log("Result from httprequest2:", result);
+  
 
           if (result.uploaded_img_id == null) {
             sendTextMessage(formatForWhatsApp(result.body), result.to)
@@ -296,31 +296,20 @@ app.post('/webhook', async (req, res) => {
         });
 
       }
-
-
-
-
     }
 
     if (messages.type === 'interactive') {
       if (messages.interactive.type === 'list_reply') {
-
-
         if_user = users.find(user=>user.mobile_number == messages.from)
-        
-        console.log(if_user);
-        
-        
         if(!if_user){
           users.push({
             mobile_number: messages.from,
             user_id: 'QSADMIN',
-            selected_apps: null
+            selected_apps: {}
           })
-        }
-        
-        users = users.map(user => user.mobile_number ==  messages.from ? { ...user, selected_apps: messages.interactive.list_reply.id } : user);
-        console.log(users)
+        }        
+        users = users.map(user => user.mobile_number ==  messages.from ? { ...user, selected_apps: {id:messages.interactive.list_reply.id, name: messages.interactive.list_reply.title} } : user);
+
         sendMessage(messages.from, `You have selected ${messages.interactive.list_reply.title} try asking Questions` )
       }
 
@@ -606,13 +595,29 @@ async function sendWhatsapp_message_with_media_caption(image_id, caption, to) {
 
 async function httprequest2(reservationObj, to) {
 
-  const newData = JSON.stringify({
+
+  let newData = JSON.stringify({
     text: reservationObj,
     app: {
       "id": "d6c86305-6e19-44bb-8e97-b6211757300b",
       "name": "PNB Metlife Demo new",
     },
   });
+
+
+  if_user = users.find(user=>user.mobile_number == messages.from)
+  
+  if(if_user){
+    newData = JSON.stringify({
+    text: reservationObj,
+    app: {
+      "id": if_user.selected_apps.id,
+      "name": if_user.selected_apps.name,
+    },
+  });
+  }
+
+  console.log('newData', newData)
 
   try {
     const options = {
