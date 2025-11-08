@@ -5,29 +5,195 @@ const axios = require('axios')
 const https = require('https')
 const fs = require('fs')
 const formData = require('form-data')
+const path = require('path')
+var cookieParser = require('cookie-parser');
+var bodyparser = require('body-parser')
 
-
-const JWT_TOKEN=process.env.JWT_TOKEN
+const JWT_TOKEN = process.env.JWT_TOKEN
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_TOKEN
 const WEBHOOK_VERIFY_TOKEN = 'my-verify-token'
+const pemDirectory = './pem/'
 
 
 
 const app = express()
 app.use(express.json())
+app.use(cookieParser());
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, 'public')))
+
+app.use(bodyparser.urlencoded({
+  extended: true
+}));
 
 
-console.log({
-  PHONE_NUMBER_ID:process.env.PHONE_NUMBER_ID,
-  JWT_TOKEN:process.env.JWT_TOKEN,
-  WHATSAPP_ACCESS_TOKEN : process.env.WHATSAPP_TOKEN,
-  RECIEVER_CONTACT_NUMBER: process.env.RECIEVER_CONTACT_NUMBER
+let users = [
+  {
+    mobile_number: 8859628376,
+    user_id: 'QSADMIN',
+    selected_apps: null
+  },
+  {
+    mobile_number: 8859628353,
+    user_id: 'QSADMIN',
+    selected_apps: null
+  },
+
+  {
+    mobile_number: 1234567890,
+    user_id: 'QSADMIN',
+    selected_apps: null
+  }
+]
+
+
+
+const httpsAgent_new = new https.Agent({
+  ca: fs.readFileSync(`${pemDirectory}root.pem`),
+  key: fs.readFileSync(`${pemDirectory}client_key.pem`),
+  cert: fs.readFileSync(`${pemDirectory}client.pem`),
+  rejectUnauthorized: false,
+  agent: false,
+});
+
+
+
+
+app.get('/', function (req, res) {
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+  console.log("cookies", req.cookies.userId)
+  res.render('index', { userId: req.cookies.userId, users: users })
+});
+
+
+
+
+app.get('/users/update/:userid', function (req, res) {
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+  const user = users.find(user => user.mobile_number == req.params.userid)
+  if (!user) {
+    return res.redirect('/')
+  }
+  res.render('edit_user', { userId: req.cookies.userId, user: user })
+});
+
+
+
+
+app.post('/users/update/:userid', function (req, res) {
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+
+  console.log(req.body.mobile_number && req.body.user_id, req.body.mobile_number, req.body.user_id)
+  if (req.body.mobile_number && req.body.user_id) {
+    users = users.map(user => user.mobile_number == req.body.mobile_number ? { ...user, user_id: req.body.user_id } : user);
+  }
+  return res.redirect('/')
+});
+
+
+
+
+app.post('/user/add', function (req, res) {
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+  const { mobile_number, user_id } = req.body
+  const user_exist = users.find(user => user.mobile_number == mobile_number)
+  if (user_exist) {
+    return res.render('add_user', { error: 'mobile_number already axist' })
+  }
+  users.push({ mobile_number: mobile_number, user_id: user_id, selected_apps: null });
+  return res.redirect('/')
+});
+
+
+
+
+
+app.get('/user/add', function (req, res) {
+
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+  return res.render('add_user')
+});
+
+
+
+app.get('/users/delete/:userid', function (req, res) {
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+  users = users.filter(user => user.mobile_number != req.params.userid)
+  return res.redirect('/')
+});
+
+
+
+
+
+app.get('/login', (req, res) => {
+  res.render('login', { logout: false })
 })
 
 
-app.get('/', (req, res) => {
-  res.send('Whatsapp with Node.js and Webhooks')
+app.post('/login', (req, res) => {
+
+  if (req.body.userId != 'admin') {
+    return res.redirect('/login')
+  }
+
+  res.cookie(`isloggedin`, true);
+  res.cookie(`userId`, req.body.userId);
+  res.redirect('/')
 })
+
+app.get('/logout', async (req, res) => {
+  res.clearCookie('isloggedin')
+  res.clearCookie('userId')
+  res.cookie(`isloggedin`, false);
+  res.cookie(`userId`, "");
+  console.log(req.cookies.userId)
+  console.log(req.cookies.isloggedin)
+  res.render('login', { logout: true })
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// app.get('/', (req, res) => {
+//   res.send('Whatsapp with Node.js and Webhooks')
+// })
+
+
+
+
+
+
 
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode']
@@ -68,29 +234,29 @@ app.post('/webhook', async (req, res) => {
 
 
   if (messages) {
-    
-    
+
+
     if (messages.type === 'text') {
       if (messages.text.body.toLowerCase() === 'hello' || messages.text.body.toLowerCase() === 'hi') {
         replyMessage(messages.from, 'Hello. How can i help you?', messages.id)
       }
 
-      else if (messages.text.body.toLowerCase() === 'list') {
+      else if (messages.text.body.toLowerCase() === 'apps') {
         sendList(messages.from)
       }
 
       else if (messages.text.body.toLowerCase() === 'buttons') {
         sendReplyButtons(messages.from)
       }
-      else{
-        
+      else {
+
         httprequest2(messages.text.body.toLowerCase(), messages.from).then((result) => {
           console.log("Result from httprequest2:", result);
-  
-          if (result.uploaded_img_id == null){
-              sendTextMessage( formatForWhatsApp(result.body), result.to)
-          }else{
-              sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body), result.to)
+
+          if (result.uploaded_img_id == null) {
+            sendTextMessage(formatForWhatsApp(result.body), result.to)
+          } else {
+            sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body), result.to)
           }
         }).catch((error) => {
           console.error("Error in httprequest2:", error);
@@ -112,10 +278,10 @@ app.post('/webhook', async (req, res) => {
         sendMessage(messages.from, `You selected the button with ID ${messages.interactive.button_reply.id} - Title ${messages.interactive.button_reply.title}`)
       }
     }
-    
+
     console.log(JSON.stringify(messages, null, 2))
   }
-  
+
   res.status(200).send('Webhook processed')
 })
 
@@ -164,6 +330,17 @@ async function replyMessage(to, body, messageId) {
 
 
 async function sendList(to) {
+
+  const data  = await getQlikApps()
+
+  let apps_list_row = []
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    obj =  {id: row.id, title: row.name, description: ''}
+    apps_list_row.push(row)
+  }
+  
   await axios({
     url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
     method: 'post',
@@ -179,40 +356,20 @@ async function sendList(to) {
         type: 'list',
         header: {
           type: 'text',
-          text: 'Message Header'
+          text: 'Available Apps'
         },
         body: {
-          text: 'This is a interactive list message'
+          text: 'select app for insights'
         },
         footer: {
-          text: 'This is the message footer'
+          text: ''
         },
         action: {
           button: 'Tap for the options',
           sections: [
             {
-              title: 'First Section',
-              rows: [
-                {
-                  id: 'first_option',
-                  title: 'First option',
-                  description: 'This is the description of the first option'
-                },
-                {
-                  id: 'second_option',
-                  title: 'Second option',
-                  description: 'This is the description of the second option'
-                }
-              ]
-            },
-            {
-              title: 'Second Section',
-              rows: [
-                {
-                  id: 'third_option',
-                  title: 'Third option'
-                }
-              ]
+              title: 'Apps',
+              rows: apps_list_row
             }
           ]
         }
@@ -274,7 +431,7 @@ async function sendReplyButtons(to) {
 
 
 function formatForWhatsApp(messages) {
-  
+
   return messages
     .join(" ")                 // join array into one string
     .split("\n")               // split on newline
@@ -285,13 +442,13 @@ function formatForWhatsApp(messages) {
 }
 
 
-function generate_fileName(){
+function generate_fileName() {
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const randomId = Math.floor(Math.random() * 10000);
-    const dynamicFileName = `chart-${timestamp}-${randomId}.png`;
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const randomId = Math.floor(Math.random() * 10000);
+  const dynamicFileName = `chart-${timestamp}-${randomId}.png`;
 
-    return dynamicFileName
+  return dynamicFileName
 
 }
 
@@ -329,135 +486,165 @@ async function downloadImage(imgPath) {
   }
 }
 
-async function upload_image_(path){
-    const data = new formData()
-    data.append('messaging_product', 'whatsapp')
-    data.append('file', fs.createReadStream(process.cwd()+`/${path}`), {contentType:'image/png'})
-    data.append('type', 'image/png')
-    const response = await axios({
-        url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/media` ,
-        method:'post',
-        headers:{
-            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`
-        },
-        data: data
-    })
-    console.log(response.data)
-    return response.data.id
+async function upload_image_(path) {
+  const data = new formData()
+  data.append('messaging_product', 'whatsapp')
+  data.append('file', fs.createReadStream(process.cwd() + `/${path}`), { contentType: 'image/png' })
+  data.append('type', 'image/png')
+  const response = await axios({
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/media`,
+    method: 'post',
+    headers: {
+      'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`
+    },
+    data: data
+  })
+  console.log(response.data)
+  return response.data.id
 }
 
 async function sendTextMessage(text_msg, to) {
 
-    const response = await axios({
-        url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages` ,
-        method:'post',
-        headers:{
-            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            'Content-Type':'application/json'
-        },
-        data: JSON.stringify({
-            messaging_product:'whatsapp',
-            to:to,
-            type:'text',
-            text:{
-                body:text_msg
-            }
-        })
-
+  const response = await axios({
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    method: 'post',
+    headers: {
+      'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    data: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'text',
+      text: {
+        body: text_msg
+      }
     })
-    console.log(response.data)
-    // return true
+
+  })
+  console.log(response.data)
+  // return true
 }
 
 async function sendWhatsapp_message_with_media_caption(image_id, caption, to) {
 
-    const response = await axios({
-        url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages` ,
-        method:'post',
-        headers:{
-            'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            'Content-Type':'application/json'
-        },
+  const response = await axios({
+    url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    method: 'post',
+    headers: {
+      'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
 
-        data: JSON.stringify({
-            messaging_product:'whatsapp',
-            to:to,
-            type:'image',
-            image:{
-                id:image_id,
-                caption:caption
-            }
-        })
-
+    data: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'image',
+      image: {
+        id: image_id,
+        caption: caption
+      }
     })
-    console.log(response.data);
-    // return true
-    
+
+  })
+  console.log(response.data);
+  // return true
+
 }
 
 
 async function httprequest2(reservationObj, to) {
 
-    const newData = JSON.stringify({
-            text: reservationObj,
-            app: {
-                "id": "d6c86305-6e19-44bb-8e97-b6211757300b",
-                "name": "PNB Metlife Demo new",
-            },
-        });
+  const newData = JSON.stringify({
+    text: reservationObj,
+    app: {
+      "id": "d6c86305-6e19-44bb-8e97-b6211757300b",
+      "name": "PNB Metlife Demo new",
+    },
+  });
 
-    try {
-        const options = {
-            url: "https://analytics.exponentia.ai:443/jwt/api/v1/nl/query",
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${JWT_TOKEN}`,
-            },
-            data: newData,
-            httpsAgent: new https.Agent({ rejectUnauthorized: false })
-        };
+  try {
+    const options = {
+      url: "https://analytics.exponentia.ai:443/jwt/api/v1/nl/query",
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${JWT_TOKEN}`,
+      },
+      data: newData,
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
+    };
 
-        const res = await axios(options);
-        
-        let body = [];
-        const myobj = res.data;
+    const res = await axios(options);
 
-        let uploaded_img_id = null
-        if (myobj.conversationalResponse.responses.length > 0 && myobj.conversationalResponse.responses[0]) {
+    let body = [];
+    const myobj = res.data;
+
+    let uploaded_img_id = null
+    if (myobj.conversationalResponse.responses.length > 0 && myobj.conversationalResponse.responses[0]) {
 
 
-            if ("narrative" in myobj.conversationalResponse.responses[0]) {
-                const temp = myobj.conversationalResponse.responses[0].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
-                body.push(temp.trim());
-            } else if ("imageUrl" in myobj.conversationalResponse.responses[0]) {
-                const img = myobj.conversationalResponse.responses[0].imageUrl;
+      if ("narrative" in myobj.conversationalResponse.responses[0]) {
+        const temp = myobj.conversationalResponse.responses[0].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
+        body.push(temp.trim());
+      } else if ("imageUrl" in myobj.conversationalResponse.responses[0]) {
+        const img = myobj.conversationalResponse.responses[0].imageUrl;
 
-                const downloadedImagePath = await downloadImage(`/jwt${img}`)
-                uploaded_img_id = await upload_image_(downloadedImagePath)
+        const downloadedImagePath = await downloadImage(`/jwt${img}`)
+        uploaded_img_id = await upload_image_(downloadedImagePath)
 
-                console.log("img",`https://analytics.exponentia.ai/jwt${img}`)
+        console.log("img", `https://analytics.exponentia.ai/jwt${img}`)
 
-                if ( myobj.conversationalResponse.responses[1] && "narrative" in myobj.conversationalResponse.responses[1]) {
-                    const text_r = myobj.conversationalResponse.responses[1].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
-                    body.push(text_r);
-                } else {
-                    console.log("Main Response else if-else: ", img);
-                }
-            }
+        if (myobj.conversationalResponse.responses[1] && "narrative" in myobj.conversationalResponse.responses[1]) {
+          const text_r = myobj.conversationalResponse.responses[1].narrative.text.replace(/[^a-zA-Z0-9]/s, ' ').replace(/\\|\//g, '').replace(/_/g, ' ');
+          body.push(text_r);
         } else {
-            const temp_1 = "Enter Valid Request";
-            body.push(temp_1);
+          console.log("Main Response else if-else: ", img);
         }
-        
-        return {uploaded_img_id, body, to};
-
-    } catch (e) {
-        console.log("catch 2", e.message);
-        throw e; // Rethrow the error for higher-level handling
+      }
+    } else {
+      const temp_1 = "Enter Valid Request";
+      body.push(temp_1);
     }
+
+    return { uploaded_img_id, body, to };
+
+  } catch (e) {
+    console.log("catch 2", e.message);
+    throw e; // Rethrow the error for higher-level handling
+  }
 }
 
+
+
+
+
+const getQlikApps = async (req, res) => {
+
+  try {  
+    const response = await axios.get(
+      `https://analytics.exponentia.ai:4242/qrs/app/full?xrfkey=0123456789ABCDEF`,
+        {
+          headers: {
+            "X-Qlik-Xrfkey": '0123456789ABCDEF',
+            "Content-Type": "application/json",
+            "X-Qlik-User": `UserDirectory=qliksensevm3;UserId=qsadmin`,
+          },
+          httpsAgent_new,
+        }
+    );
+    
+    const data = response.data.map(app=>{
+        return {id:app.id, name: app.name}
+    })
+
+    return data
+
+  } catch (error) {
+    console.log(`Failed to fetch Qlik apps: ${error.message}`);
+    
+  }
+};
 
 
 
