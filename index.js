@@ -605,7 +605,7 @@ async function httprequest2(reservationObj, to) {
   });
 
 
-  if_user = users.find(user=>user.mobile_number == messages.from)
+  if_user = users.find(user=>user.mobile_number == to)
   
   if(if_user){
     newData = JSON.stringify({
