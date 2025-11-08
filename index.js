@@ -285,15 +285,21 @@ app.post('/webhook', async (req, res) => {
 
         httprequest2(messages.text.body.toLowerCase(), messages.from).then((result) => {
   
+            console.log(result)
+            try {
+              
+              if (result.uploaded_img_id == null) {
+                sendTextMessage(formatForWhatsApp(result.body), result.to)
+              } else {
+                sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body), result.to)
+              }
 
-          if (result.uploaded_img_id == null) {
-            sendTextMessage(formatForWhatsApp(result.body), result.to)
-          } else {
-            sendWhatsapp_message_with_media_caption(result.uploaded_img_id, formatForWhatsApp(result.body), result.to)
-          }
-        }).catch((error) => {
-          console.error("Error in httprequest2:", error);
-        });
+            } catch (e) {
+              console.error("Error sending whatsapp message:", e.message);
+            }
+          }).catch((error) => {
+            console.error("Error in httprequest2:", error.message);
+          });
 
       }
     }
