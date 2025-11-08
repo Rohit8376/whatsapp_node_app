@@ -30,12 +30,12 @@ app.use(bodyparser.urlencoded({
 
 let users = [
   {
-    mobile_number: 8859628376,
+    mobile_number: 918859628376,
     user_id: 'QSADMIN',
     selected_apps: null
   },
   {
-    mobile_number: 8859628353,
+    mobile_number: 918859628353,
     user_id: 'QSADMIN',
     selected_apps: null
   },
@@ -304,7 +304,24 @@ app.post('/webhook', async (req, res) => {
 
     if (messages.type === 'interactive') {
       if (messages.interactive.type === 'list_reply') {
-        sendMessage(messages.from, `You selected the option with ID ${messages.interactive.list_reply.id} - Title ${messages.interactive.list_reply.title}`)
+
+
+        if_user = users.find(user=>user.mobile_number == messages.from)
+        
+        console.log(if_user);
+        
+        
+        if(!if_user){
+          users.push({
+            mobile_number: messages.from,
+            user_id: 'QSADMIN',
+            selected_apps: null
+          })
+        }
+        
+        users = users.map(user => user.mobile_number ==  messages.from ? { ...user, selected_apps: messages.interactive.list_reply.id } : user);
+        console.log(users)
+        sendMessage(messages.from, `You have selected ${messages.interactive.list_reply.title} try asking Questions` )
       }
 
       if (messages.interactive.type === 'button_reply') {
