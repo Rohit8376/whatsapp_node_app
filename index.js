@@ -64,7 +64,7 @@ const apps_list = ['992190e8-b8ea-41e5-974e-7da7dc748927', 'c3470397-2799-4b92-a
 
 const getQlikApps = async (to) => {
 
-  logged_in_user = users.find(user.mobile_number==to)
+  logged_in_user = users.find(user=>user.mobile_number==to)
   console.log('logged_in_user', logged_in_user)
 
   try {  
