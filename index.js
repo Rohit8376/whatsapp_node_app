@@ -59,6 +59,42 @@ const httpsAgent_new = new https.Agent({
 
 
 
+const apps_list = ['992190e8-b8ea-41e5-974e-7da7dc748927', 'c3470397-2799-4b92-a5b4-1eb9373f4c6b', 'd6c86305-6e19-44bb-8e97-b6211757300b', 'de900653-d0c6-4dff-84ee-f62ba49469d5']
+
+
+const getQlikApps = async (to) => {
+
+  logged_in_user = users.find(user.mobile_number==to)
+  console.log('logged_in_user', logged_in_user)
+
+  try {  
+    const response = await axios.get(
+      `https://analytics.exponentia.ai:4242/qrs/app/full?xrfkey=0123456789ABCDEF`,
+        {
+          headers: {
+            "X-Qlik-Xrfkey": '0123456789ABCDEF',
+            "Content-Type": "application/json",
+            "X-Qlik-User": `UserDirectory=qliksensevm3;UserId=qsadmin`,
+          },
+          httpsAgent: httpsAgent_new,
+        }
+    );
+    
+    let data = response.data.map(app=>{
+        return {id:app.id, name: app.name}
+    })
+
+    data = data.filter(app=>apps_list.includes(app.id))
+
+    return data
+
+  } catch (error) {
+    console.log(`Failed to fetch Qlik apps: ${error.message}`);
+    
+  }
+};
+
+
 
 app.get('/', function (req, res) {
   if (req.cookies.isloggedin == 'false') {
@@ -67,6 +103,13 @@ app.get('/', function (req, res) {
   }
   console.log("cookies", req.cookies.userId)
   res.render('index', { userId: req.cookies.userId, users: users })
+});
+
+
+
+app.get('/qrs/apps', async function (req, res) {
+    const data  = await getQlikApps()
+    return res.send(data)
 });
 
 
@@ -180,16 +223,7 @@ app.get('/logout', async (req, res) => {
 
 
 
-
-
-
-
-
-// app.get('/', (req, res) => {
-//   res.send('Whatsapp with Node.js and Webhooks')
-// })
-
-
+ 
 
 
 
@@ -331,8 +365,8 @@ async function replyMessage(to, body, messageId) {
 
 async function sendList(to) {
 
-  const data  = await getQlikApps()
-
+  const data  = await getQlikApps(to)
+  
   let apps_list_row = []
 
   for (let i = 0; i < data.length; i++) {
@@ -617,34 +651,6 @@ async function httprequest2(reservationObj, to) {
 
 
 
-
-
-const getQlikApps = async (req, res) => {
-
-  try {  
-    const response = await axios.get(
-      `https://analytics.exponentia.ai:4242/qrs/app/full?xrfkey=0123456789ABCDEF`,
-        {
-          headers: {
-            "X-Qlik-Xrfkey": '0123456789ABCDEF',
-            "Content-Type": "application/json",
-            "X-Qlik-User": `UserDirectory=qliksensevm3;UserId=qsadmin`,
-          },
-          httpsAgent_new,
-        }
-    );
-    
-    const data = response.data.map(app=>{
-        return {id:app.id, name: app.name}
-    })
-
-    return data
-
-  } catch (error) {
-    console.log(`Failed to fetch Qlik apps: ${error.message}`);
-    
-  }
-};
 
 
 
