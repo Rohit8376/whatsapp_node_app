@@ -136,7 +136,6 @@ app.post('/users/update/:userid', function (req, res) {
     return
   }
 
-  console.log(req.body.mobile_number && req.body.user_id, req.body.mobile_number, req.body.user_id)
   if (req.body.mobile_number && req.body.user_id) {
     users = users.map(user => user.mobile_number == req.body.mobile_number ? { ...user, user_id: req.body.user_id } : user);
   }
@@ -372,8 +371,9 @@ async function sendList(to) {
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     obj =  {id: row.id, title: row.name, description: ''}
-    apps_list_row.push(row)
+    apps_list_row.push(obj)
   }
+  
   
   await axios({
     url: `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`,
