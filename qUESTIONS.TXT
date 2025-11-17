@@ -1,0 +1,57 @@
+
+---
+
+1. What is the MTD achievement and growth percentage for the business verticals in the current period? done
+ -- bar chart 
+
+2. How does the MTD achievement compare across different channels in the current year?  < NEED HELP > done
+ -- bar chart 
+
+3. What is the Milestone Target and Milestone Achievement percentage for the business verticals?  done
+ -- Clustered Bar Chart
+
+4. How is the FTM (Full Year Target) achievement percentage distributed across different business verticals?  done
+ --Recommended Chart Type    Donut Chart or Pie Chart
+
+
+6. What is the additional target for each business vertical, and how does it compare to the actual MTD achievement? --> done
+ -- bar chart
+
+ 9. What is the performance of PNB and Proprietary Ecommerce and Partnership and Group in terms of actual versus target values?
+
+    - Grouped Bar Chart  done
+
+
+
+
+6. how does the performance of each channel (e.g., Banca Retail, MBFC and MFI) compare in terms of MTD achievement and growth percentage?
+ -- -- line chart      
+
+7. what is the total NOP (Net Operating Profit) for the business verticals in the current year compared to the milestone targets?
+
+  -- Stacked Bar Chart
+
+      This can show both the NOP and the milestone targets side by side for each business vertical.
+
+
+
+
+
+
+8. How does the NOP break down by channel in terms of growth percentage and milestone achievement?
+
+    --Stacked Bar Chart
+
+     -- req =  Display the NOP for each channel with growth percentages and milestone achievements for comparison.
+
+
+
+10. What are the Milestone Achievement and FTM Achievements for each channel like Banca Retail and MBFC and MFI?
+
+    -- Dual Bar Chart
+
+11. How does the actual achievement compare to the last year’s MTD (Month to Date) for each business vertical and channel?
+
+     -- Line Chart
+
+       A line chart will clearly show the trend over time, while a side-by-side bar chart compares current and previous year achievements.
