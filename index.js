@@ -28,6 +28,8 @@ app.use(bodyparser.urlencoded({
 }));
 
 
+
+
 let users = [
   {
     mobile_number: 918859628376,
@@ -96,14 +98,21 @@ const getQlikApps = async (to) => {
 
 
 
-app.get('/', function (req, res) {
-  if (req.cookies.isloggedin == 'false') {
-    res.redirect('/login')
-    return
+
+app.get('/webhook', (req, res) => {
+  const mode = req.query['hub.mode']
+  const challenge = req.query['hub.challenge']
+  const token = req.query['hub.verify_token']
+
+  if (mode && token === WEBHOOK_VERIFY_TOKEN) {
+    res.status(200).send(challenge)
+  } else {
+    res.sendStatus(403)
   }
-  console.log("cookies", req.cookies.userId)
-  res.render('index', { userId: req.cookies.userId, users: users })
-});
+})
+
+
+
 
 
 
@@ -227,19 +236,6 @@ app.get('/logout', async (req, res) => {
 
 
 
-
-app.get('/webhook', (req, res) => {
-  const mode = req.query['hub.mode']
-  const challenge = req.query['hub.challenge']
-  const token = req.query['hub.verify_token']
-
-  if (mode && token === WEBHOOK_VERIFY_TOKEN) {
-    res.status(200).send(challenge)
-  } else {
-    res.sendStatus(403)
-  }
-})
-
 app.post('/webhook', async (req, res) => {
   const { entry } = req.body
 
@@ -329,6 +325,15 @@ app.post('/webhook', async (req, res) => {
 
   res.status(200).send('Webhook processed')
 })
+
+app.get('/', function (req, res) {
+  if (req.cookies.isloggedin == 'false') {
+    res.redirect('/login')
+    return
+  }
+  console.log("cookies", req.cookies.userId)
+  res.render('index', { userId: req.cookies.userId, users: users })
+});
 
 
 
